@@ -184,8 +184,28 @@ DeleteColumn:
     CLC
     ADC #01
     STA PT_HIGH
-    LDA #$40
+    LDA #$38
     STA PT_LOW
+    LDY #$00
+
+    LDX #$29
+
+Deletecolloop:
+    JSR DeleteBlock
+    LDA PT_LOW
+    CLC
+    ADC #$40
+    STA PT_LOW
+    LDA PT_HIGH
+    ADC #$01
+    STA PT_HIGH
+
+    DEX
+    BNE DeleteColLoop
+
+    RTS
+
+DeleteBlock:
     LDA #$00
     LDY #$00
     STA (PT_LOW),Y     ; Store A at address ($FB) + Y
