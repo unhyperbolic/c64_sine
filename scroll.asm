@@ -40,6 +40,7 @@ Y          = $FD
 
     LDA #>FRAME_BUFFER
     STA PT_HIGH             ; High byte
+    CLC
     ADC #$20
     STA ClearPagesEnd
     LDA #$66                 ; no pixels set
@@ -51,6 +52,7 @@ Y          = $FD
 
     LDA #>FRAME_COL
     STA PT_HIGH             ; High byte
+    CLC
     ADC #$08
     STA ClearPagesEnd
     LDA #$10                ; white foreground, black background
@@ -85,12 +87,19 @@ ScrollLoop:
     STA PT2_LOW
 
     LDA #>FRAME_BUFFER
+    CLC
     ADC #$1F
     STA MovePagesEnd
 
     JSR MovePages
 
     JSR DeleteColumn
+
+    LDX Time
+    INX
+    STX Time
+
+    LDA SineTable,X
 
     JMP ScrollLoop
 
