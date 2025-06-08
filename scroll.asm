@@ -11,14 +11,15 @@ CIA2_PORT_A     = $dd00
 PT_LOW          = $FB
 PT_HIGH         = $FC
 
+PT2_LOW         = $FD
+PT2_HIGH        = $FE
+
 FRAME_BUFFER        = $a000
 FRAME_COL           = $8400
-
 
 X_LO       = $FB
 X_HI       = $FC
 Y          = $FD
-
 
 
     LDA VIC_CTRL_1          ; VIC mode
@@ -70,6 +71,8 @@ Y          = $FD
 
     JSR     SetPixel
 
+;    JSR     RandomStuff         
+
 ; start main loop
 
     LDX #0
@@ -111,12 +114,15 @@ ClearPage:
     LDY #$00        ; Y will index from 0 to 255
 
 ClearPageLoop:
-    STA (PT_LOW),Y     ; Store 0 at address ($FB) + Y
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
     INY
     BNE ClearPageLoop   ; Loop until Y wraps back to 0 (after 256 iterations)
 
     RTS             ; Done
 
+MovePageLoop:
+    LDA (PT_LOW),Y
+    STA (PT2_LOW),Y
 
 WaitForFrame:
     lda VIC_CTRL_1
@@ -217,4 +223,39 @@ NoAdd:
     ASL $01         ; Shift multiplier left
     DEX
     BNE MulLoop
+    RTS
+
+; ---------------------------------------------------------------
+
+; debugging
+
+; Draw some random stuff
+
+RandomStuff:
+    LDA #$A0
+    STA PT_HIGH
+    LDA #$00
+    STA PT_LOW
+    LDY #$20
+    LDA #$06
+    STA (PT_LOW),Y
+    
+    LDY #$40
+    LDA #$36
+    STA (PT_LOW),Y
+
+    LDY #$46
+    LDA #$38
+    STA (PT_LOW),Y
+
+    LDY #$86
+    LDA #$41
+    STA (PT_LOW),Y
+
+    LDA #$A6
+    STA PT_HIGH
+    LDY #$83
+    LDA #$46
+    STA (PT_LOW),Y
+
     RTS
