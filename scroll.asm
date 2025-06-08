@@ -31,16 +31,6 @@ Y          = $FD
 
     JSR VICConfig1
 
-    LDA CIA2_PORT_A         ; VIC memory bank
-    AND #%11111100
-    ORA #3                  ; 01 for $8000, 03 for $0000
-    STA CIA2_PORT_A
-
-    LDA VIC_MEM_CTRL        ; VIC memory base address
-    AND #$F0
-    ORA #$08                ; 08 for $2000, added to $8000 above
-    STA VIC_MEM_CTRL
-
 ; --- clear mem ----------------------------------------------------------------
 
 ; clear all from a000 - bfff
