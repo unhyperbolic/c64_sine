@@ -1,9 +1,15 @@
+
     * = $C000       ; Tell the assembler this code goes at $C000
 
-    LDA $D011      ; VIC mode
-    ORA #$20       ; Set graphics mode
-    STA $D011
+VIC_CTRL_1      = $d011
+VIC_RASTER      = $d012
+VIC_CTRL_2      = $d016
 
+
+    LDA VIC_CTRL_1      ; VIC mode
+    ORA #$20            ; Set graphics mode
+    STA VIC_CTRL_1      ; Write it back
+    
     LDA $DD00      ; VIC memory bank
     AND #$FC
     ORA #$01       ; 01 for $8000, 03 for $0000
@@ -26,6 +32,16 @@
     STA $FC
     JSR ClearPage
 
+    LDX #0
+MainLoop:
+    STX VIC_CTRL_2      ; store h scroll
+    JSR WaitForFrame
+    INX
+    TXA
+    AND #7
+    TAX
+    JMP MainLoop
+
     RTS
 
 ClearPage:
@@ -38,4 +54,19 @@ ClearPageLoop:
     BNE ClearPageLoop   ; Loop until Y wraps back to 0 (after 256 iterations)
 
     RTS             ; Done
+
+
+WaitForFrame:
+    lda VIC_CTRL_1
+    and #$80
+    bne WaitForFrame
+
+@WaitLow:
+    lda VIC_RASTER
+    cmp #$00
+    bne WaitLow
+
+    rts
+
+
 
