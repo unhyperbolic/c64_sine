@@ -12,6 +12,7 @@ PT_LOW          = $FB
 PT_HIGH         = $FC
 
 FRAME_BUFFER        = $a000
+FRAME_COL           = $8400
 
 
 X_LO       = $FB
@@ -42,14 +43,14 @@ Y          = $FD
     STA PT_HIGH             ; High byte
     LDA #$C0
     STA ClearPagesEnd
-    LDA #$01
+    LDA #$0                 ; no pixels set
     STA ClearPagesValue
 
     JSR ClearPages
 
 ; clear all from 8400 - 84ff: Default is 1024
 
-    LDA #$84
+    LDA #>FRAME_COL
     STA PT_HIGH             ; High byte
     LDA #$88
     STA ClearPagesEnd
