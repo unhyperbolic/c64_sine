@@ -24,7 +24,16 @@ VIC_CTRL_2      = $d016
     STA $FB         ; Low byte of target address
     LDA #$A0
     STA $FC         ; High byte
+
+MyLoop:
     JSR ClearPage
+    LDA $FC
+    CLC
+    ADC #1
+    STA $FC
+    CMP #$C0
+    BNE MyLoop
+    
 
     LDA #$00
     STA $FB
