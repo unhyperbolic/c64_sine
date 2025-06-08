@@ -14,8 +14,8 @@ PT_HIGH         = $FC
 PT2_LOW         = $FD
 PT2_HIGH        = $FE
 
-FRAME_BUFFER        = $a000
-FRAME_COL           = $8400
+FRAME_BUFFER        = $2000
+FRAME_COL           = $0400
 
 X_LO       = $FB
 X_HI       = $FC
@@ -28,7 +28,7 @@ Y          = $FD
 
     LDA CIA2_PORT_A         ; VIC memory bank
     AND #%11111100
-    ORA #1                  ; 01 for $8000, 03 for $0000
+    ORA #3                  ; 01 for $8000, 03 for $0000
     STA CIA2_PORT_A
 
     LDA VIC_MEM_CTRL        ; VIC memory base address
@@ -42,7 +42,7 @@ Y          = $FD
 
     LDA #>FRAME_BUFFER
     STA PT_HIGH             ; High byte
-    LDA #$C0
+    LDA #$40
     STA ClearPagesEnd
     LDA #$0                 ; no pixels set
     STA ClearPagesValue
@@ -53,7 +53,7 @@ Y          = $FD
 
     LDA #>FRAME_COL
     STA PT_HIGH             ; High byte
-    LDA #$88
+    LDA #$08
     STA ClearPagesEnd
     LDA #$10                ; white foreground, black background
     STA ClearPagesValue
@@ -144,6 +144,7 @@ ADDR_LO     = $04
 ADDR_HI     = $05
 
 BIT_MASK   = $08
+BIT_OFFSET = $09
 
 
 
@@ -152,11 +153,14 @@ BitMaskTable:
 
 
 SetPixel:
+
     ; --- Step 1: Compute 7 - (X AND 7) ---
     LDA X_LO
     AND #$07      ; X MOD 8
+    STA BIT_OFFSET
     EOR #$07      ; Bit = 7 - (X MOD 8)
     STA BIT_INDEX
+
 
     ; --- Step 2: Compute X / 8 ---
     LSR X_HI
@@ -177,14 +181,19 @@ SetPixel:
     LDA ADDR_LO
     ADC X_LO
     STA ADDR_LO
-
     LDA ADDR_HI
     ADC X_HI
     STA ADDR_HI
 
+    CLC
+    LDA ADDR_LO
+    ADC BIT_OFFSET
+    STA ADDR_LO
+    LDA ADDR_HI
+    ADC #0
+
     ; --- Step 5: Add $8000 base address ---
     CLC
-    LDA ADDR_HI
     ADC #>FRAME_BUFFER
     STA ADDR_HI
 
@@ -202,6 +211,7 @@ SetPixel:
 
 
 Multiply:
+
     ; A = multiplier 1 (Y), X = multiplier 2 (40)
     STA $00
     STX $01
