@@ -41,20 +41,14 @@ PT_HIGH         = $FC
 
 ; clear all from 8400 - 84ff: Default is 1024
 
-    LDA #$00
-    STA PT_LOW              ; Low byte of target address
     LDA #$84
     STA PT_HIGH             ; High byte
-
-@loop2:
+    LDA #$88
+    STA ClearPagesEnd
     LDA #$10                ; white foreground, black background
-    JSR ClearPage
-    LDA PT_HIGH
-    CLC
-    ADC #1
-    STA PT_HIGH
-    CMP #$88
-    BNE @loop2
+    STA ClearPagesValue
+
+    JSR ClearPages
 
 ; start main loop
 
@@ -78,6 +72,7 @@ ClearPagesValue
 ClearPagesEnd
     .BYTE 0
 
+; Clear pages from PT_HIGH to ClearPagesEnd with ClearPagesValue
 ClearPages:
     LDA #$00
     STA PT_LOW              ; Low byte of target address
