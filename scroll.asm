@@ -49,7 +49,7 @@ Y          = $FD
     STA PT_HIGH             ; High byte
     ADC #$20
     STA ClearPagesEnd
-    LDA #$66                 ; no pixels set
+    LDA #$00                 ; no pixels set
     STA ClearPagesValue
 
     JSR ClearPages
@@ -76,7 +76,7 @@ Y          = $FD
 
     JSR     SetPixel
 
-    JSR     RandomStuff         
+;    JSR     RandomStuff         
 
 ; start main byte scroll loop
 
