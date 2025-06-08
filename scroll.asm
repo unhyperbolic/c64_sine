@@ -15,7 +15,7 @@ PT_HIGH         = $FC
     LDA VIC_CTRL_1          ; VIC mode
     ORA #$20                ; Set graphics mode
     STA VIC_CTRL_1          ; Write it back
-    
+
     LDA CIA2_PORT_A         ; VIC memory bank
     AND #%11111100
     ORA #1                  ; 01 for $8000, 03 for $0000
@@ -30,21 +30,15 @@ PT_HIGH         = $FC
 
 ; clear all from a000 - bfff
 
-    LDA #$00
-    STA PT_LOW              ; Low byte of target address
     LDA #$A0
     STA PT_HIGH             ; High byte
+    LDA #$C0
+    STA ClearPagesEnd
+    LDA #$01
+    STA ClearPagesValue
 
-@loop1:
-    LDA #$01                ; no pixels set
-    JSR ClearPage
-    LDA PT_HIGH
-    CLC
-    ADC #1
-    STA PT_HIGH
-    CMP #$C0
-    BNE @loop1
-    
+    JSR ClearPages
+
 ; clear all from 8400 - 84ff: Default is 1024
 
     LDA #$00
@@ -78,14 +72,25 @@ MainLoop:
 
 ; ---------------------------------------------------------------
 
+ClearPagesValue
+    .BYTE 0
 
+ClearPagesEnd
+    .BYTE 0
 
+ClearPages:
+    LDA #$00
+    STA PT_LOW              ; Low byte of target address
 
-
-
-
-
-
+    LDA ClearPagesValue
+    JSR ClearPage
+    LDA PT_HIGH
+    CLC
+    ADC #1
+    STA PT_HIGH
+    CMP ClearPagesEnd
+    BNE ClearPages
+    RTS
 
 ClearPage:
     LDY #$00        ; Y will index from 0 to 255
@@ -157,7 +162,7 @@ SetPixel:
 
     LDY #$00
     LDA ($02),Y
-    ORA BitMask     ; set the bit
+;    ORA BitMask     ; set the bit
     STA ($02),Y
 
     RTS
@@ -192,8 +197,3 @@ SkipAdd:
     DEX
     BNE MulLoop
     RTS
-
-
-
-
-
