@@ -1,8 +1,17 @@
     * = $C000       ; Tell the assembler this code goes at $C000
 
+    LDA $D011      ; VIC mode
+    ORA #$20       ; Set bit 5 (OR with 32)
+    STA $D011      ; Write it back
+
+    LDA $DD00
+    AND #$FC
+    ORA #$01
+    STA $DD00
+
     LDA #$00
     STA $FB         ; Low byte of target address
-    LDA #$20
+    LDA #$40
     STA $FC         ; High byte
 
     JSR ClearPage
