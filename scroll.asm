@@ -11,6 +11,14 @@ CIA2_PORT_A     = $dd00
 PT_LOW          = $FB
 PT_HIGH         = $FC
 
+FRAME_BUFFER        = $a000
+
+
+X_LO       = $FB
+X_HI       = $FC
+Y          = $FD
+
+
 
     LDA VIC_CTRL_1          ; VIC mode
     ORA #$20                ; Set graphics mode
@@ -30,7 +38,7 @@ PT_HIGH         = $FC
 
 ; clear all from a000 - bfff
 
-    LDA #$A0
+    LDA #>FRAME_BUFFER
     STA PT_HIGH             ; High byte
     LDA #$C0
     STA ClearPagesEnd
@@ -49,6 +57,17 @@ PT_HIGH         = $FC
     STA ClearPagesValue
 
     JSR ClearPages
+
+; write test pixel
+
+    LDA     #1
+    STA     Y
+    LDA     #<318
+    STA     X_LO
+    LDA     #>318
+    STA     X_HI
+
+    JSR     SetPixel
 
 ; start main loop
 
@@ -111,84 +130,90 @@ WaitForFrame:
     rts
 
 
-; Input: X in PT_LOW, Y in PT_HIGH
-; Output: Pixel set in bitmap at ($2000 + offset)
 
-    ; example values
-    LDA #100     ; X = 100
-    STA PT_LOW
-    LDA #50      ; Y = 50
-    STA PT_HIGH
+BIT_INDEX  = $FE
 
-SetPixel:
-    ; Load X and Y
-    LDA PT_HIGH         ; Y
-    LDX #40
-    JSR Multiply    ; result in $FD/$FE = Y * 40
+ADDR_LO     = $04
+ADDR_HI     = $05
 
-    LDA PT_LOW
-    LSR A
-    LSR A
-    LSR A           ; X / 8
-    CLC
-    ADC $FE         ; low byte of Y*40 + (X / 8)
-    STA $00         ; low byte of offset
+BIT_MASK   = $08
 
-    LDA $FD
-    ADC #$00        ; carry from previous ADC
-    STA $01         ; high byte of offset
 
-    ; Set bit in the byte
-    LDA PT_LOW
-    AND #7
-    EOR #7          ; Bit position = 7 - (X AND 7)
-    TAX
-    LDA BitMaskTable,X  ; Get mask to set bit
 
-    LDY #$20        ; Bitmap at $2000
-    LDX #$00
-    CLC
-    LDA $00
-    ADC #$00
-    STA $02         ; address = $2000 + offset
-    LDA $01
-    ADC #$20
-    STA $03
-
-    LDY #$00
-    LDA ($02),Y
-;    ORA BitMask     ; set the bit
-    STA ($02),Y
-
-    RTS
-
-; Lookup table for setting bits: %10000000, %01000000, ..., %00000001
 BitMaskTable:
     .BYTE $80, $40, $20, $10, $08, $04, $02, $01
 
-; Multiply Y * 40 (8-bit x 8-bit)
-; Input: A = Y, X = 40
-; Output: $FD/$FE = 16-bit result
+
+SetPixel:
+    ; --- Step 1: Compute 7 - (X AND 7) ---
+    LDA X_LO
+    AND #$07      ; X MOD 8
+    EOR #$07      ; Bit = 7 - (X MOD 8)
+    STA BIT_INDEX
+
+    ; --- Step 2: Compute X / 8 ---
+    LSR X_HI
+    ROR X_LO
+    LSR X_HI
+    ROR X_LO
+    LSR X_HI
+    ROR X_LO
+
+    ; --- Step 3: Multiply Y * 40 ---
+    ; Input: A = Y, Multiplier = 40
+    LDA Y
+    LDX #40
+    JSR Multiply      ; result in ADDR_LO/ADDR_HI
+
+    ; --- Step 4: Add (X / 8) to result ---
+    CLC
+    LDA ADDR_LO
+    ADC X_LO
+    STA ADDR_LO
+
+    LDA ADDR_HI
+    ADC X_HI
+    STA ADDR_HI
+
+    ; --- Step 5: Add $8000 base address ---
+    CLC
+    LDA ADDR_HI
+    ADC #>FRAME_BUFFER
+    STA ADDR_HI
+
+    ; --- Step 6: Load mask and set bit ---
+    LDY BIT_INDEX
+    LDA BitMaskTable,Y
+    STA BIT_MASK
+
+    LDY #0
+    LDA (ADDR_LO),Y
+    ORA BIT_MASK
+    STA (ADDR_LO),Y
+
+    RTS
+
+
 Multiply:
-    STX $02
-    STA $03
+    ; A = multiplier 1 (Y), X = multiplier 2 (40)
+    STA $00
+    STX $01
     LDA #0
-    STA $FD
-    STA $FE
+    STA ADDR_LO
+    STA ADDR_HI
     LDX #8
 MulLoop:
-    ASL $03
-    ROL $FE
-    ROL $FD
-    BCC SkipAdd
+    LSR $00         ; Shift right multiplicand
+    BCC NoAdd
     CLC
-    LDA $FE
-    ADC $02
-    STA $FE
-    LDA $FD
+    LDA ADDR_LO
+    ADC $01
+    STA ADDR_LO
+    LDA ADDR_HI
     ADC #0
-    STA $FD
-SkipAdd:
+    STA ADDR_HI
+NoAdd:
+    ASL $01         ; Shift multiplier left
     DEX
     BNE MulLoop
     RTS
