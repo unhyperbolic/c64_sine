@@ -90,6 +90,8 @@ ScrollLoop:
 
     JSR MovePages
 
+    JSR DeleteColumn
+
     JMP ScrollLoop
 
 ; start main loop
@@ -110,7 +112,8 @@ MainLoop:
 
 ; Globals
 
-
+Time
+    .BYTE 0
 
 ; ---------------------------------------------------------------
 
@@ -173,6 +176,33 @@ MovePageLoop:
     STA (PT2_LOW),Y
     INY
     BNE MovePageLoop
+
+    RTS
+
+DeleteColumn:
+    LDA #>FRAME_BUFFER
+    CLC
+    ADC #01
+    STA PT_HIGH
+    LDA #$40
+    STA PT_LOW
+    LDA #$00
+    LDY #$00
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
+    INY
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
+    INY
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
+    INY
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
+    INY
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
+    INY
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
+    INY
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
+    INY
+    STA (PT_LOW),Y     ; Store A at address ($FB) + Y
 
     RTS
 
