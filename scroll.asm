@@ -14,6 +14,9 @@ PT_HIGH         = $FC
 PT2_LOW         = $FD
 PT2_HIGH        = $FE
 
+;FRAME_BUFFER        = $a000
+;FRAME_COL           = $8400
+
 FRAME_BUFFER        = $2000
 FRAME_COL           = $0400
 
@@ -42,9 +45,9 @@ Y          = $FD
 
     LDA #>FRAME_BUFFER
     STA PT_HIGH             ; High byte
-    LDA #$40
+    ADC #$20
     STA ClearPagesEnd
-    LDA #$0                 ; no pixels set
+    LDA #$66                 ; no pixels set
     STA ClearPagesValue
 
     JSR ClearPages
@@ -53,7 +56,7 @@ Y          = $FD
 
     LDA #>FRAME_COL
     STA PT_HIGH             ; High byte
-    LDA #$08
+    ADC #$08
     STA ClearPagesEnd
     LDA #$10                ; white foreground, black background
     STA ClearPagesValue
@@ -71,7 +74,28 @@ Y          = $FD
 
     JSR     SetPixel
 
-;    JSR     RandomStuff         
+    JSR     RandomStuff         
+
+; start main byte scroll loop
+
+ScrollLoop:
+    LDA #>FRAME_BUFFER
+    STA PT_HIGH
+    LDA #$08
+    STA PT_LOW
+
+    LDA #>FRAME_BUFFER
+    STA PT2_HIGH
+    LDA #$00
+    STA PT2_LOW
+
+    LDA #>FRAME_BUFFER
+    ADC #$20
+    STA MovePagesEnd
+
+    JSR MovePages
+
+    JMP ScrollLoop
 
 ; start main loop
 
@@ -86,6 +110,12 @@ MainLoop:
     JMP MainLoop
 
     RTS
+
+; ---------------------------------------------------------------
+
+; Globals
+
+
 
 ; ---------------------------------------------------------------
 
@@ -120,9 +150,39 @@ ClearPageLoop:
 
     RTS             ; Done
 
+MovePagesEnd
+    .BYTE 0
+
+MovePages:
+    JSR MovePage
+
+    LDA PT2_HIGH
+    CLC
+    ADC #1
+    STA PT2_HIGH
+
+    LDA PT_HIGH
+    CLC
+    ADC #1
+    STA PT_HIGH
+
+    CMP MovePagesEnd
+    BNE MovePages
+    RTS
+
+MovePage:
+    LDY #$00
+
 MovePageLoop:
     LDA (PT_LOW),Y
     STA (PT2_LOW),Y
+    INY
+    BNE MovePageLoop
+
+    RTS
+
+SineTable:
+    .BYTE 47, 45, 42, 40, 38, 36, 33, 31, 29, 27, 25, 24, 22, 20, 19, 17, 15, 14, 13, 11, 10, 9, 8, 7, 6, 5, 4, 4, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 4, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 17, 19, 20, 22, 24, 25, 27, 29, 31, 33, 36, 38, 40, 42, 45, 47, 49, 52, 54, 57, 60, 62, 65, 68, 70, 73, 76, 79, 82, 85, 88, 91, 94, 97, 100, 103, 106, 109, 112, 115, 118, 121, 124
 
 WaitForFrame:
     lda VIC_CTRL_1
@@ -241,7 +301,7 @@ NoAdd:
 ; Draw some random stuff
 
 RandomStuff:
-    LDA #$A0
+    LDA #$20
     STA PT_HIGH
     LDA #$00
     STA PT_LOW
@@ -261,7 +321,7 @@ RandomStuff:
     LDA #$41
     STA (PT_LOW),Y
 
-    LDA #$A6
+    LDA #$23
     STA PT_HIGH
     LDY #$83
     LDA #$46
