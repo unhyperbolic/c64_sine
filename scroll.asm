@@ -17,9 +17,12 @@ PT2_HIGH        = $FE
 ;FRAME_BUFFER        = $a000
 ;FRAME_COL           = $8400
 
-FRAME_BUFFER        = $2000
-FRAME_COL           = $0400
+;FRAME_BUFFER        = $2000
+;FRAME_COL           = $0400
 
+FRAME_BUFFER        = $8000
+FRAME_COL           = $a000
+        
 X_LO       = $FB
 X_HI       = $FC
 Y          = $FD
@@ -29,7 +32,7 @@ Y          = $FD
     ORA #$20                ; Set graphics mode
     STA VIC_CTRL_1          ; Write it back
 
-    JSR VICConfig1
+    JSR VICConfig2
 
 ; --- clear mem ----------------------------------------------------------------
 
@@ -39,7 +42,7 @@ Y          = $FD
     STA PT_HIGH             ; High byte
     ADC #$20
     STA ClearPagesEnd
-    LDA #$00                 ; no pixels set
+    LDA #$66                 ; no pixels set
     STA ClearPagesValue
 
     JSR ClearPages
@@ -82,7 +85,7 @@ ScrollLoop:
     STA PT2_LOW
 
     LDA #>FRAME_BUFFER
-    ADC #$20
+    ADC #$1F
     STA MovePagesEnd
 
     JSR MovePages
@@ -174,12 +177,13 @@ MovePageLoop:
     RTS
 
 VICConfig1:
+    ; memory bank at $0000
     ; framebuffer at $2000
     ; colorbuffer at $0400
         
     LDA CIA2_PORT_A         ; VIC memory bank
     AND #%11111100
-    ORA #3                  ; 01 for $8000, 03 for $0000
+    ORA #3
     STA CIA2_PORT_A
 
     LDA #%00011000
@@ -188,14 +192,16 @@ VICConfig1:
     RTS
 
 VICConfig2:
+    ; memory bank at $8000
+    ; framebuffer at $8000
+    ; colorbuffer at $9000
+
     LDA CIA2_PORT_A         ; VIC memory bank
     AND #%11111100
-    ORA #3                  ; 01 for $8000, 03 for $0000
+    ORA #1
     STA CIA2_PORT_A
 
-    LDA VIC_MEM_CTRL        ; VIC memory base address
-    AND #$F0
-    ORA #$08                ; 08 for $2000, added to $8000 above
+    LDA #%10000000
     STA VIC_MEM_CTRL
 
     RTS
