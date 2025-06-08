@@ -64,9 +64,9 @@ Y          = $FD
 
     LDA     #1
     STA     Y
-    LDA     #<318
+    LDA     #<319
     STA     X_LO
-    LDA     #>318
+    LDA     #>319
     STA     X_HI
 
     JSR     SetPixel
@@ -77,7 +77,7 @@ Y          = $FD
 
     LDX #0
 MainLoop:
-    STX VIC_CTRL_2              ; store h scroll
+;    STX VIC_CTRL_2              ; store h scroll
     JSR WaitForFrame
     INX
     TXA
@@ -144,7 +144,7 @@ ADDR_LO     = $04
 ADDR_HI     = $05
 
 BIT_MASK   = $08
-BIT_OFFSET = $09
+Y_OFF    = $09
 
 
 
@@ -157,22 +157,21 @@ SetPixel:
     ; --- Step 1: Compute 7 - (X AND 7) ---
     LDA X_LO
     AND #$07      ; X MOD 8
-    STA BIT_OFFSET
-    EOR #$07      ; Bit = 7 - (X MOD 8)
     STA BIT_INDEX
 
+    LDA X_LO
+    AND #$F8      ; & ~7
+    STA X_LO
 
-    ; --- Step 2: Compute X / 8 ---
-    LSR X_HI
-    ROR X_LO
-    LSR X_HI
-    ROR X_LO
-    LSR X_HI
-    ROR X_LO
+    LDA Y
+    AND #$7
+    STA Y_OFF
+
 
     ; --- Step 3: Multiply Y * 40 ---
     ; Input: A = Y, Multiplier = 40
     LDA Y
+    AND #$f8
     LDX #40
     JSR Multiply      ; result in ADDR_LO/ADDR_HI
 
@@ -187,7 +186,7 @@ SetPixel:
 
     CLC
     LDA ADDR_LO
-    ADC BIT_OFFSET
+    ADC Y_OFF
     STA ADDR_LO
     LDA ADDR_HI
     ADC #0
