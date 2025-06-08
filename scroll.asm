@@ -100,6 +100,15 @@ ScrollLoop:
     STX Time
 
     LDA SineTable,X
+    STA Y
+
+    LDA     #<319
+    STA     X_LO
+    LDA     #>319
+    STA     X_HI
+
+    JSR SetPixel
+    
 
     JMP ScrollLoop
 
